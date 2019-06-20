@@ -2,6 +2,7 @@
     Wrapper classes for the Plantower PMS5003.
     Philip Basford
     12/02/2018
+    Converted into Pycom library by Daniel Hausner, 20/06/2019
 """
 
 import logging
@@ -15,8 +16,8 @@ DEFAULT_READ_TIMEOUT = 1  # How long to sit looking for the correct character se
 
 DEFAULT_LOGGING_LEVEL = logging.WARN
 
-MSG_CHAR_1 = b'\x42'  # First character to be recieved in a valid packet
-MSG_CHAR_2 = b'\x4d'  # Second character to be recieved in a valid packet
+MSG_CHAR_1 = b'\x42'  # First character to be received in a valid packet
+MSG_CHAR_2 = b'\x4d'  # Second character to be received in a valid packet
 
 
 class PlantowerReading(object):
@@ -101,7 +102,7 @@ class Plantower(object):
     def _verify(self, recv):
         """
             Uses the last 2 bytes of the data packet from the Plantower sensor
-            to verify that the data recived is correct
+            to verify that the data received is correct
         """
         calc = 0
         ord_arr = []
@@ -130,12 +131,12 @@ class Plantower(object):
                 (start + timedelta(seconds=self.read_timeout))):
             inp = self.serial.read()  # Read a character from the input
             if inp == MSG_CHAR_1:  # check it matches
-                recv += inp  # if it does add it to recieve string
+                recv += inp  # if it does add it to receive string
                 inp = self.serial.read()  # read the next character
                 if inp == MSG_CHAR_2:  # check it's what's expected
-                    recv += inp  # att it to the recieve string
+                    recv += inp  # att it to the receive string
                     recv += self.serial.read(30)  # read the remaining 30 bytes
                     self._verify(recv)  # verify the checksum
                     return PlantowerReading(recv)  # convert to reading object
             # If the character isn't what we are expecting loop until timeout
-        raise PlantowerException("No message recieved")
+        raise PlantowerException("No message received")

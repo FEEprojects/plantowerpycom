@@ -8,20 +8,22 @@ import logging
 from datetime import datetime, timedelta
 from serial import Serial, SerialException
 
-DEFAULT_SERIAL_PORT = "/dev/ttyUSB0" # Serial port to use if no other specified
-DEFAULT_BAUD_RATE = 9600 # Serial baud rate to use if no other specified
-DEFAULT_SERIAL_TIMEOUT = 2 # Serial timeout to use if not specified
-DEFAULT_READ_TIMEOUT = 1 #How long to sit looking for the correct character sequence.
+DEFAULT_SERIAL_PORT = "/dev/ttyUSB0"  # Serial port to use if no other specified
+DEFAULT_BAUD_RATE = 9600  # Serial baud rate to use if no other specified
+DEFAULT_SERIAL_TIMEOUT = 2  # Serial timeout to use if not specified
+DEFAULT_READ_TIMEOUT = 1  # How long to sit looking for the correct character sequence.
 
 DEFAULT_LOGGING_LEVEL = logging.WARN
 
-MSG_CHAR_1 = b'\x42' # First character to be recieved in a valid packet
-MSG_CHAR_2 = b'\x4d' # Second character to be recieved in a valid packet
+MSG_CHAR_1 = b'\x42'  # First character to be recieved in a valid packet
+MSG_CHAR_2 = b'\x4d'  # Second character to be recieved in a valid packet
+
 
 class PlantowerReading(object):
     """
         Describes a single reading from the PMS5003 sensor
     """
+
     def __init__(self, line):
         """
             Takes a line from the Plantower serial port and converts it into
@@ -43,10 +45,11 @@ class PlantowerReading(object):
 
     def __str__(self):
         return (
-            "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s," %
-            (self.timestamp, self.pm10_cf1, self.pm10_std, self.pm25_cf1, self.pm25_std,
-             self.pm100_cf1, self.pm100_std, self.gr03um, self.gr05um,
-             self.gr10um, self.gr25um, self.gr50um, self.gr100um))
+                "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s," %
+                (self.timestamp, self.pm10_cf1, self.pm10_std, self.pm25_cf1, self.pm25_std,
+                 self.pm100_cf1, self.pm100_std, self.gr03um, self.gr05um,
+                 self.gr10um, self.gr25um, self.gr50um, self.gr100um))
+
 
 class PlantowerException(Exception):
     """
@@ -54,10 +57,12 @@ class PlantowerException(Exception):
     """
     pass
 
+
 class Plantower(object):
     """
         Actual interface to the PMS5003 sensor
     """
+
     def __init__(
             self, port=DEFAULT_SERIAL_PORT, baud=DEFAULT_BAUD_RATE,
             serial_timeout=DEFAULT_SERIAL_TIMEOUT,
@@ -100,11 +105,11 @@ class Plantower(object):
         """
         calc = 0
         ord_arr = []
-        for c in bytearray(recv[:-2]): #Add all the bytes together except the checksum bytes
+        for c in bytearray(recv[:-2]):  # Add all the bytes together except the checksum bytes
             calc += c
             ord_arr.append(c)
         self.logger.debug(str(ord_arr))
-        sent = (recv[-2] << 8) | recv[-1] # Combine the 2 bytes together
+        sent = (recv[-2] << 8) | recv[-1]  # Combine the 2 bytes together
         if sent != calc:
             self.logger.error("Checksum failure %d != %d", sent, calc)
             raise PlantowerException("Checksum failure")
@@ -117,20 +122,20 @@ class Plantower(object):
             item in the buffer
         """
         recv = b''
-        start = datetime.utcnow() #Start timer
+        start = datetime.utcnow()  # Start timer
         if perform_flush:
-            self.serial.reset_input_buffer()  #Flush any data in the buffer
-        while(
+            self.serial.reset_input_buffer()  # Flush any data in the buffer
+        while (
                 datetime.utcnow() <
                 (start + timedelta(seconds=self.read_timeout))):
-            inp = self.serial.read() # Read a character from the input
-            if inp == MSG_CHAR_1: # check it matches
-                recv += inp # if it does add it to recieve string
-                inp = self.serial.read() # read the next character
-                if inp == MSG_CHAR_2: # check it's what's expected
-                    recv += inp # att it to the recieve string
-                    recv += self.serial.read(30) # read the remaining 30 bytes
-                    self._verify(recv) # verify the checksum
-                    return PlantowerReading(recv) # convert to reading object
-            #If the character isn't what we are expecting loop until timeout
+            inp = self.serial.read()  # Read a character from the input
+            if inp == MSG_CHAR_1:  # check it matches
+                recv += inp  # if it does add it to recieve string
+                inp = self.serial.read()  # read the next character
+                if inp == MSG_CHAR_2:  # check it's what's expected
+                    recv += inp  # att it to the recieve string
+                    recv += self.serial.read(30)  # read the remaining 30 bytes
+                    self._verify(recv)  # verify the checksum
+                    return PlantowerReading(recv)  # convert to reading object
+            # If the character isn't what we are expecting loop until timeout
         raise PlantowerException("No message recieved")

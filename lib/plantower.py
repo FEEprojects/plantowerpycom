@@ -127,7 +127,7 @@ class Plantower(object):
             self.logger.error("Checksum failure %d != %d", sent, calc)
             raise PlantowerException("Checksum failure")
 
-    def read(self, perform_flush=True):
+    def read(self):
         """
             Reads a line from the serial port and return
             if perform_flush is set to true it will flush the serial buffer
@@ -135,17 +135,15 @@ class Plantower(object):
             item in the buffer
         """
         recv = b''
-        if perform_flush:
-            self.serial.reset_input_buffer()  # Flush any data in the buffer
         read_timeout = self.read_timeout
         chrono = self.chrono
         chrono.reset()  # Reset the timer
         chrono.start()  # Start timer
         while (chrono.read() < read_timeout):
-            inp = self.serial.read()  # Read a character from the input
+            inp = self.serial.read(1)  # Read a character from the input
             if inp == MSG_CHAR_1:  # check it matches
                 recv += inp  # if it does add it to receive string
-                inp = self.serial.read()  # read the next character
+                inp = self.serial.read(1)  # read the next character
                 if inp == MSG_CHAR_2:  # check it's what's expected
                     recv += inp  # att it to the receive string
                     recv += self.serial.read(30)  # read the remaining 30 bytes

@@ -6,10 +6,13 @@
 """
 
 import logging
-from datetime import datetime, timedelta
+import time
+from machine import Timer
 from serial import Serial, SerialException
 
-DEFAULT_SERIAL_PORT = "/dev/ttyUSB0"  # Serial port to use if no other specified
+timestamp_template = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}"  # yyyy-mm-dd hh-mm-ss
+
+DEFAULT_SERIAL_PORT = ('P10', 'P11')  # Serial port to use if no other specified, (TX, RX)
 DEFAULT_BAUD_RATE = 9600  # Serial baud rate to use if no other specified
 DEFAULT_SERIAL_TIMEOUT = 2  # Serial timeout to use if not specified
 DEFAULT_READ_TIMEOUT = 1  # How long to sit looking for the correct character sequence.
@@ -30,7 +33,7 @@ class PlantowerReading(object):
             Takes a line from the Plantower serial port and converts it into
             an object containing the data
         """
-        self.timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        self.timestamp = timestamp_template.format(*time.gmtime())
         self.pm10_cf1 = round(line[4] * 256 + line[5], 1)
         self.pm25_cf1 = round(line[6] * 256 + line[7], 1)
         self.pm100_cf1 = round(line[8] * 256 + line[9], 1)
@@ -84,6 +87,7 @@ class Plantower(object):
         self.logger.info("Serial Timeout: %s", self.serial_timeout)
         self.read_timeout = read_timeout
         self.logger.info("Read Timeout: %s", self.read_timeout)
+        self.chrono = Timer.Chrono()
         try:
             self.serial = Serial(
                 port=self.port, baudrate=self.baud,
@@ -123,12 +127,13 @@ class Plantower(object):
             item in the buffer
         """
         recv = b''
-        start = datetime.utcnow()  # Start timer
         if perform_flush:
             self.serial.reset_input_buffer()  # Flush any data in the buffer
-        while (
-                datetime.utcnow() <
-                (start + timedelta(seconds=self.read_timeout))):
+        read_timeout = self.read_timeout
+        chrono = self.chrono
+        chrono.reset()  # Reset the timer
+        chrono.start()  # Start timer
+        while (chrono.read() < read_timeout):
             inp = self.serial.read()  # Read a character from the input
             if inp == MSG_CHAR_1:  # check it matches
                 recv += inp  # if it does add it to receive string
@@ -137,6 +142,9 @@ class Plantower(object):
                     recv += inp  # att it to the receive string
                     recv += self.serial.read(30)  # read the remaining 30 bytes
                     self._verify(recv)  # verify the checksum
+                    chrono.stop()  # Stop the timer
                     return PlantowerReading(recv)  # convert to reading object
             # If the character isn't what we are expecting loop until timeout
+        chrono.stop()  # Stop the timer (in case the while loop timed out)
+
         raise PlantowerException("No message received")

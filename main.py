@@ -5,8 +5,13 @@ Daniel Hausner
 """
 
 from plantower import Plantower, PlantowerException
+from machine import RTC
 
 plantower = Plantower()
+
+# Initialise the time
+rtc = RTC()
+rtc.init((2017, 2, 28, 10, 30, 0, 0, 0))  # Pass time tuple (e.g. from GPS) to initialise the time
 
 while True:
     try:

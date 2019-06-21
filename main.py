@@ -4,10 +4,13 @@ Daniel Hausner
 20/06/2019
 """
 
-from Plantower import Plantower
+from plantower import Plantower, PlantowerException
 
 plantower = Plantower()
 
 while True:
-    recv = plantower.read()
-    print(recv)
+    try:
+        recv = plantower.read()
+        print(recv)
+    except PlantowerException as pe:
+        print(pe)

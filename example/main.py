@@ -2,9 +2,18 @@
 Example programme that runs on a Pycom board and prints plantower readings.
 Daniel Hausner
 20/06/2019
+
+Place this file in your main project folder, so that the project structure is as follows:
+Your-project-folder
+|-lib
+  |-plantowerpycom
+    |-__init__.py
+    |-logging.py
+    |-plantower.py
+|-main.py
 """
 
-from plantower import Plantower, PlantowerException
+from plantowerpycom import Plantower, PlantowerException
 from machine import RTC
 
 plantower = Plantower()

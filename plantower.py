@@ -5,7 +5,7 @@
     Converted into Pycom library by Daniel Hausner, 20/06/2019
 """
 
-import logging
+from plantowerpycom import logging
 import time
 from machine import Timer, UART
 
